@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meter History View</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      /* Custom styles for a white theme */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f9fafb; /* bg-gray-50 */
+        color: #111827; /* text-gray-900 */
+      }
+      .table-container {
+        max-height: 75vh;
+        overflow: auto;
+      }
+      /* Custom scrollbar */
+      .table-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      .table-container::-webkit-scrollbar-track {
+        background: #e5e7eb; /* bg-gray-200 */
+      }
+      .table-container::-webkit-scrollbar-thumb {
+        background: #9ca3af; /* bg-gray-400 */
+        border-radius: 4px;
+      }
+      .table-container::-webkit-scrollbar-thumb:hover {
+        background: #6b7280; /* bg-gray-500 */
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f3f4f6; /* bg-gray-100 */
+        white-space: nowrap;
+      }
+      thead tr:nth-child(2) th {
+        top: 41px; /* Adjust based on first header row height */
+      }
+      tbody th {
+        position: sticky;
+        left: 0;
+        background-color: #ffffff; /* bg-white */
+        z-index: 5;
+      }
+      .custom-bg {
+        background-color: #ffffff;
+      }
+      .custom-border {
+        border-color: #e5e7eb;
+      }
+      .custom-input {
+        background-color: #f9fafb;
+        border-color: #d1d5db;
+        color: #111827;
+      }
+      .custom-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 1px #3b82f6;
+      }
+      .custom-btn {
+        background-color: #e5e7eb;
+        color: #1f2937;
+      }
+      .custom-btn:hover {
+        background-color: #d1d5db;
+      }
+    </style>
+  </head>
+  <body class="p-4 sm:p-6 lg:p-8">
+    <div class="max-w-screen-2xl mx-auto">
+      <!-- Header -->
+      <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Meter Reading History</h1>
+        <p class="text-gray-600 mt-1">
+          Monthly breakdown of meter readings for the last 5 months.
+        </p>
+      </header>
+
+      <!-- Filter Section -->
+      <div class="custom-bg p-4 rounded-lg mb-6 shadow-lg border custom-border">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label
+              for="buildingFilter"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Building</label
+            >
+            <select
+              id="buildingFilter"
+              class="w-full custom-input rounded-md shadow-sm p-2 focus:outline-none"
+            >
+              <option value="">All Buildings</option>
+            </select>
+          </div>
+          <div>
+            <label
+              for="roomFilter"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Room Number</label
+            >
+            <input
+              type="text"
+              id="roomFilter"
+              placeholder="Enter room number..."
+              class="w-full custom-input rounded-md shadow-sm p-2 focus:outline-none placeholder-gray-500"
+            />
+          </div>
+          <div class="col-span-1 lg:col-start-4 flex items-end">
+            <button
+              id="clearFiltersBtn"
+              class="w-full custom-btn font-semibold py-2 px-4 rounded-md shadow-md transition duration-300"
+            >
+              <i class="fas fa-times mr-2"></i>Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room Data Table -->
+      <div
+        class="custom-bg rounded-lg shadow-lg overflow-hidden border custom-border"
+      >
+        <div class="table-container">
+          <table class="min-w-full divide-y custom-border text-sm">
+            <thead
+              id="historyTableHead"
+              class="text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              <!-- Header will be dynamically generated -->
+            </thead>
+            <tbody id="historyTableBody" class="divide-y custom-border">
+              <!-- Table rows will be dynamically inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- MOCK DATA ---
+      const mockData = {
+        buildings: [
+          { id: "B001", name: "101", type: "apt" },
+          { id: "B002", name: "102", type: "shoppingmall" },
+          { id: "B003", name: "205", type: "apt" },
+          { id: "B004", name: "301", type: "apt" },
+        ],
+        rooms: [
+          { no: "101", buildingNo: "B001" },
+          { no: "102", buildingNo: "B001" },
+          { no: "125", buildingNo: "B001" },
+          { no: "215", buildingNo: "B002" },
+          { no: "301", buildingNo: "B003" },
+          { no: "505", buildingNo: "B001" },
+          { no: "217", buildingNo: "B002" },
+          { no: "411", buildingNo: "B003" },
+          { no: "101", buildingNo: "B004" },
+        ],
+        meters: [
+          { id: "MTR-B001-101", roomNo: "101", buildingNo: "B001" },
+          { id: "MTR-B001-102", roomNo: "102", buildingNo: "B001" },
+          { id: "MTR-B001-125", roomNo: "125", buildingNo: "B001" },
+          { id: "MTR-B002-215", roomNo: "215", buildingNo: "B002" },
+          { id: "MTR-B003-301", roomNo: "301", buildingNo: "B003" },
+          { id: "MTR-B001-505", roomNo: "505", buildingNo: "B001" },
+          { id: "MTR-B002-217", roomNo: "217", buildingNo: "B002" },
+          { id: "MTR-B003-411", roomNo: "411", buildingNo: "B003" },
+          { id: "MTR-B004-101", roomNo: "101", buildingNo: "B004" },
+        ],
+        meterReadings: [
+          {
+            meterId: "MTR-B001-101",
+            readingDate: "2025-08-15",
+            main: 89810,
+            generator: 575,
+            util: 362,
+            water: 12680,
+          },
+          {
+            meterId: "MTR-B001-101",
+            readingDate: "2025-07-15",
+            main: 88940,
+            generator: 562,
+            util: 351,
+            water: 12355,
+          },
+          {
+            meterId: "MTR-B001-101",
+            readingDate: "2025-06-15",
+            main: 88021,
+            generator: 550,
+            util: 340,
+            water: 12050,
+          },
+          {
+            meterId: "MTR-B001-101",
+            readingDate: "2025-05-15",
+            main: 87100,
+            generator: 538,
+            util: 329,
+            water: 11745,
+          },
+          {
+            meterId: "MTR-B001-101",
+            readingDate: "2025-04-15",
+            main: 86200,
+            generator: 525,
+            util: 318,
+            water: 11440,
+          },
+          {
+            meterId: "MTR-B001-102",
+            readingDate: "2025-08-15",
+            main: 46890,
+            generator: 225,
+            util: 131,
+            water: 8720,
+          },
+          {
+            meterId: "MTR-B001-102",
+            readingDate: "2025-07-15",
+            main: 45980,
+            generator: 218,
+            util: 124,
+            water: 8540,
+          },
+          {
+            meterId: "MTR-B001-102",
+            readingDate: "2025-06-15",
+            main: 45000,
+            generator: 210,
+            util: 115,
+            water: 8300,
+          },
+          {
+            meterId: "MTR-B001-102",
+            readingDate: "2025-05-15",
+            main: 44075,
+            generator: 202,
+            util: 108,
+            water: 8105,
+          },
+          {
+            meterId: "MTR-B001-102",
+            readingDate: "2025-04-15",
+            main: 43150,
+            generator: 195,
+            util: 102,
+            water: 7910,
+          },
+          {
+            meterId: "MTR-B001-125",
+            readingDate: "2025-08-15",
+            main: 7250,
+            generator: 145,
+            util: 88,
+            water: 3200,
+          },
+          {
+            meterId: "MTR-B001-125",
+            readingDate: "2025-07-15",
+            main: 6500,
+            generator: 135,
+            util: 80,
+            water: 2950,
+          },
+          {
+            meterId: "MTR-B001-125",
+            readingDate: "2025-06-15",
+            main: 5800,
+            generator: 125,
+            util: 72,
+            water: 2700,
+          },
+          {
+            meterId: "MTR-B001-125",
+            readingDate: "2025-05-15",
+            main: 5150,
+            generator: 115,
+            util: 64,
+            water: 2450,
+          },
+          {
+            meterId: "MTR-B001-125",
+            readingDate: "2025-04-15",
+            main: 4500,
+            generator: 105,
+            util: 56,
+            water: 2200,
+          },
+          {
+            meterId: "MTR-B002-215",
+            readingDate: "2025-08-15",
+            main: 159800,
+            generator: 9400,
+            util: 1350,
+            water: 950,
+          },
+          {
+            meterId: "MTR-B002-215",
+            readingDate: "2025-07-15",
+            main: 155100,
+            generator: 9150,
+            util: 1200,
+            water: 550,
+          },
+          {
+            meterId: "MTR-B002-215",
+            readingDate: "2025-06-15",
+            main: 150400,
+            generator: 8900,
+            util: 1050,
+            water: 150,
+          },
+          {
+            meterId: "MTR-B002-215",
+            readingDate: "2025-05-15",
+            main: 145700,
+            generator: 8650,
+            util: 900,
+            water: 100,
+          },
+          {
+            meterId: "MTR-B002-215",
+            readingDate: "2025-04-15",
+            main: 141000,
+            generator: 8400,
+            util: 750,
+            water: 50,
+          },
+          {
+            meterId: "MTR-B003-301",
+            readingDate: "2025-08-15",
+            main: 1250,
+            generator: 40,
+            util: 55,
+            water: 870,
+          },
+          {
+            meterId: "MTR-B003-301",
+            readingDate: "2025-07-15",
+            main: 700,
+            generator: 25,
+            util: 30,
+            water: 450,
+          },
+          {
+            meterId: "MTR-B003-301",
+            readingDate: "2025-06-15",
+            main: 100,
+            generator: 10,
+            util: 5,
+            water: 50,
+          },
+          {
+            meterId: "MTR-B003-301",
+            readingDate: "2025-05-15",
+            main: 80,
+            generator: 8,
+            util: 4,
+            water: 40,
+          },
+          {
+            meterId: "MTR-B003-301",
+            readingDate: "2025-04-15",
+            main: 60,
+            generator: 6,
+            util: 3,
+            water: 30,
+          },
+          {
+            meterId: "MTR-B001-505",
+            readingDate: "2025-08-15",
+            main: 259800,
+            generator: 1340,
+            util: 950,
+            water: 37800,
+          },
+          {
+            meterId: "MTR-B001-505",
+            readingDate: "2025-07-15",
+            main: 257000,
+            generator: 1300,
+            util: 910,
+            water: 36900,
+          },
+          {
+            meterId: "MTR-B001-505",
+            readingDate: "2025-06-15",
+            main: 254200,
+            generator: 1280,
+            util: 890,
+            water: 36500,
+          },
+          {
+            meterId: "MTR-B001-505",
+            readingDate: "2025-05-15",
+            main: 252100,
+            generator: 1250,
+            util: 850,
+            water: 35900,
+          },
+          {
+            meterId: "MTR-B001-505",
+            readingDate: "2025-04-15",
+            main: 251050,
+            generator: 1225,
+            util: 825,
+            water: 35450,
+          },
+          {
+            meterId: "MTR-B002-217",
+            readingDate: "2025-08-15",
+            main: 12050,
+            generator: 310,
+            util: 150,
+            water: 4500,
+          },
+          {
+            meterId: "MTR-B002-217",
+            readingDate: "2025-07-15",
+            main: 11200,
+            generator: 290,
+            util: 140,
+            water: 4200,
+          },
+          {
+            meterId: "MTR-B002-217",
+            readingDate: "2025-06-15",
+            main: 10350,
+            generator: 270,
+            util: 130,
+            water: 3900,
+          },
+          {
+            meterId: "MTR-B002-217",
+            readingDate: "2025-05-15",
+            main: 9500,
+            generator: 250,
+            util: 120,
+            water: 3600,
+          },
+          {
+            meterId: "MTR-B002-217",
+            readingDate: "2025-04-15",
+            main: 8650,
+            generator: 230,
+            util: 110,
+            water: 3300,
+          },
+          {
+            meterId: "MTR-B003-411",
+            readingDate: "2025-08-15",
+            main: 5500,
+            generator: 90,
+            util: 60,
+            water: 2500,
+          },
+          {
+            meterId: "MTR-B003-411",
+            readingDate: "2025-07-15",
+            main: 4800,
+            generator: 80,
+            util: 55,
+            water: 2200,
+          },
+          {
+            meterId: "MTR-B003-411",
+            readingDate: "2025-06-15",
+            main: 4100,
+            generator: 70,
+            util: 50,
+            water: 1900,
+          },
+          {
+            meterId: "MTR-B003-411",
+            readingDate: "2025-05-15",
+            main: 3400,
+            generator: 60,
+            util: 45,
+            water: 1600,
+          },
+          {
+            meterId: "MTR-B003-411",
+            readingDate: "2025-04-15",
+            main: 2700,
+            generator: 50,
+            util: 40,
+            water: 1300,
+          },
+          {
+            meterId: "MTR-B004-101",
+            readingDate: "2025-08-15",
+            main: 9800,
+            generator: 150,
+            util: 90,
+            water: 4000,
+          },
+          {
+            meterId: "MTR-B004-101",
+            readingDate: "2025-07-15",
+            main: 9100,
+            generator: 140,
+            util: 85,
+            water: 3700,
+          },
+          {
+            meterId: "MTR-B004-101",
+            readingDate: "2025-06-15",
+            main: 8400,
+            generator: 130,
+            util: 80,
+            water: 3400,
+          },
+          {
+            meterId: "MTR-B004-101",
+            readingDate: "2025-05-15",
+            main: 7700,
+            generator: 120,
+            util: 75,
+            water: 3100,
+          },
+          {
+            meterId: "MTR-B004-101",
+            readingDate: "2025-04-15",
+            main: 7000,
+            generator: 110,
+            util: 70,
+            water: 2800,
+          },
+        ],
+      };
+
+      // --- DOM ELEMENTS ---
+      const tableHead = document.getElementById("historyTableHead");
+      const tableBody = document.getElementById("historyTableBody");
+      const buildingFilter = document.getElementById("buildingFilter");
+      const roomFilter = document.getElementById("roomFilter");
+      const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+
+      function getPastMonths(count, fromDate) {
+        const months = [];
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        for (let i = 0; i < count; i++) {
+          const date = new Date(
+            fromDate.getFullYear(),
+            fromDate.getMonth() - i,
+            1
+          );
+          months.push({
+            year: date.getFullYear(),
+            month: date.getMonth(),
+            name: monthNames[date.getMonth()],
+          });
+        }
+        return months.reverse();
+      }
+
+      function renderHistoryTable(roomsToRender = mockData.rooms) {
+        const today = new Date("2025-08-17T10:54:00");
+        const fiveMonths = getPastMonths(5, today);
+
+        // 1. Render Table Header
+        let headerHtml = `<tr>
+                <th scope="col" class="px-4 py-3 text-left" rowspan="2">Building</th>
+                <th scope="col" class="px-4 py-3 text-left" rowspan="2">Room</th>`;
+        fiveMonths.forEach((month) => {
+          headerHtml += `<th scope="col" class="p-2 text-center" colspan="4">${month.name} ${month.year}</th>`;
+        });
+        headerHtml += `</tr><tr>`;
+        fiveMonths.forEach(() => {
+          headerHtml += `
+                    <th scope="col" class="px-3 py-3 text-right font-normal">Main</th>
+                    <th scope="col" class="px-3 py-3 text-right font-normal">Gen</th>
+                    <th scope="col" class="px-3 py-3 text-right font-normal">Util</th>
+                    <th scope="col" class="px-3 py-3 text-right font-normal border-r custom-border">Water</th>
+                `;
+        });
+        headerHtml += `</tr>`;
+        tableHead.innerHTML = headerHtml;
+
+        // 2. Prepare Data and Render Table Body
+        tableBody.innerHTML = "";
+        const allReadings = mockData.meterReadings.reduce((acc, reading) => {
+          const key = `${reading.meterId}-${new Date(
+            reading.readingDate
+          ).getFullYear()}-${new Date(reading.readingDate).getMonth()}`;
+          acc[key] = reading;
+          return acc;
+        }, {});
+
+        if (roomsToRender.length === 0) {
+          const totalColumns = 2 + fiveMonths.length * 4;
+          tableBody.innerHTML = `<tr><td colspan="${totalColumns}" class="text-center py-10 text-gray-500">No rooms found.</td></tr>`;
+          return;
+        }
+
+        roomsToRender.forEach((room) => {
+          const building = mockData.buildings.find(
+            (b) => b.id === room.buildingNo
+          );
+          const meter = mockData.meters.find(
+            (m) => m.roomNo === room.no && m.buildingNo === room.buildingNo
+          );
+
+          let rowHtml = `<tr class="bg-white hover:bg-gray-50">
+                    <th scope="row" class="px-4 py-3 whitespace-nowrap font-medium text-gray-900 text-left border-r custom-border">${building.name}</th>
+                    <th scope="row" class="px-4 py-3 whitespace-nowrap font-medium text-gray-700 text-left">${room.no}</th>`;
+
+          fiveMonths.forEach((month) => {
+            const key = meter
+              ? `${meter.id}-${month.year}-${month.month}`
+              : null;
+            const reading = key ? allReadings[key] : null;
+            const format = (val) =>
+              typeof val === "number" ? val.toLocaleString() : "-";
+
+            rowHtml += `
+                        <td class="px-3 py-3 text-right text-gray-800">${format(
+                          reading?.main
+                        )}</td>
+                        <td class="px-3 py-3 text-right text-gray-600">${format(
+                          reading?.generator
+                        )}</td>
+                        <td class="px-3 py-3 text-right text-gray-600">${format(
+                          reading?.util
+                        )}</td>
+                        <td class="px-3 py-3 text-right text-gray-600 border-r custom-border">${format(
+                          reading?.water
+                        )}</td>
+                    `;
+          });
+
+          rowHtml += `</tr>`;
+          tableBody.innerHTML += rowHtml;
+        });
+      }
+
+      function populateFilters() {
+        const buildingNames = [
+          ...new Set(mockData.buildings.map((b) => b.name)),
+        ];
+        buildingNames.sort().forEach((name) => {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          buildingFilter.appendChild(option);
+        });
+      }
+
+      function applyFilters() {
+        const building = buildingFilter.value;
+        const room = roomFilter.value.toLowerCase();
+
+        const filteredData = mockData.rooms.filter((r) => {
+          const buildingInfo = mockData.buildings.find(
+            (b) => b.id === r.buildingNo
+          );
+          const buildingMatch = !building || buildingInfo.name === building;
+          const roomMatch = !room || r.no.toLowerCase().includes(room);
+          return buildingMatch && roomMatch;
+        });
+
+        renderHistoryTable(filteredData);
+      }
+
+      // --- INITIALIZATION & EVENT LISTENERS ---
+      document.addEventListener("DOMContentLoaded", () => {
+        populateFilters();
+        renderHistoryTable();
+
+        buildingFilter.addEventListener("change", applyFilters);
+        roomFilter.addEventListener("input", applyFilters);
+        clearFiltersBtn.addEventListener("click", () => {
+          buildingFilter.value = "";
+          roomFilter.value = "";
+          applyFilters();
+        });
+      });
+    </script>
+  </body>
+</html>
