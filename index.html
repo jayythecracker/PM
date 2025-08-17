@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room Management Dashboard</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      /* Custom styles for a white theme */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f9fafb; /* bg-gray-50 */
+        color: #111827; /* text-gray-900 */
+      }
+      .table-container {
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+      /* Custom scrollbar */
+      .table-container::-webkit-scrollbar {
+        width: 8px;
+      }
+      .table-container::-webkit-scrollbar-track {
+        background: #e5e7eb; /* bg-gray-200 */
+      }
+      .table-container::-webkit-scrollbar-thumb {
+        background: #9ca3af; /* bg-gray-400 */
+        border-radius: 4px;
+      }
+      .table-container::-webkit-scrollbar-thumb:hover {
+        background: #6b7280; /* bg-gray-500 */
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f9fafb; /* bg-gray-50 */
+      }
+      thead tr:nth-child(2) th {
+        top: 48px; /* Adjust based on first header row height */
+      }
+      .meter-header {
+        border-bottom: 1px solid #d1d5db; /* border-gray-300 */
+      }
+      .custom-bg {
+        background-color: #ffffff;
+      }
+      .custom-border {
+        border-color: #e5e7eb; /* border-gray-200 */
+      }
+      .custom-input {
+        background-color: #f9fafb; /* bg-gray-50 */
+        border-color: #d1d5db; /* border-gray-300 */
+        color: #111827; /* text-gray-900 */
+      }
+      .custom-input:focus {
+        border-color: #3b82f6; /* focus:border-blue-500 */
+        box-shadow: 0 0 0 1px #3b82f6; /* focus:ring-blue-500 */
+      }
+      .custom-btn {
+        background-color: #e5e7eb; /* bg-gray-200 */
+        color: #1f2937; /* text-gray-800 */
+      }
+      .custom-btn:hover {
+        background-color: #d1d5db; /* hover:bg-gray-300 */
+      }
+      .table-row-hover:hover {
+        background-color: #f9fafb; /* hover:bg-gray-50 */
+      }
+    </style>
+  </head>
+  <body class="p-4 sm:p-6 lg:p-8">
+    <div class="max-w-screen-xl mx-auto">
+      <!-- Header -->
+      <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">
+          Room Management Dashboard
+        </h1>
+        <p class="text-gray-600 mt-1">
+          View, filter, and manage all rooms across buildings.
+        </p>
+      </header>
+
+      <!-- Filter Section -->
+      <div class="custom-bg p-4 rounded-lg mb-6 shadow-lg border custom-border">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Building Filter -->
+          <div>
+            <label
+              for="buildingFilter"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Building</label
+            >
+            <select
+              id="buildingFilter"
+              class="w-full custom-input rounded-md shadow-sm p-2 focus:outline-none"
+            >
+              <option value="">All Buildings</option>
+            </select>
+          </div>
+          <!-- Room Type Filter -->
+          <div>
+            <label
+              for="roomTypeFilter"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Room Type</label
+            >
+            <select
+              id="roomTypeFilter"
+              class="w-full custom-input rounded-md shadow-sm p-2 focus:outline-none"
+            >
+              <option value="">All Types</option>
+            </select>
+          </div>
+          <!-- Owner Name Filter -->
+          <div>
+            <label
+              for="ownerFilter"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Owner Name</label
+            >
+            <input
+              type="text"
+              id="ownerFilter"
+              placeholder="Search by owner name..."
+              class="w-full custom-input rounded-md shadow-sm p-2 focus:outline-none placeholder-gray-500"
+            />
+          </div>
+          <!-- Clear Filters Button -->
+          <div class="flex items-end">
+            <button
+              id="clearFiltersBtn"
+              class="w-full custom-btn font-semibold py-2 px-4 rounded-md shadow-md transition duration-300"
+            >
+              <i class="fas fa-times mr-2"></i>Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room Data Table -->
+      <div
+        class="custom-bg rounded-lg shadow-lg overflow-hidden border custom-border"
+      >
+        <div class="table-container">
+          <table class="min-w-full divide-y custom-border">
+            <thead
+              class="text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left" rowspan="2">
+                  Building
+                </th>
+                <th scope="col" class="px-4 py-3 text-left" rowspan="2">
+                  Room
+                </th>
+                <th
+                  scope="col"
+                  class="px-4 py-3 text-left border-r custom-border"
+                  rowspan="2"
+                >
+                  Owner Name
+                </th>
+                <th
+                  scope="colgroup"
+                  class="px-6 py-3 text-center meter-header"
+                  colspan="4"
+                >
+                  Previous Meter
+                </th>
+                <th
+                  scope="colgroup"
+                  class="px-6 py-3 text-center meter-header"
+                  colspan="4"
+                >
+                  Current Meter
+                </th>
+                <th scope="col" class="px-4 py-3 text-center" rowspan="2">
+                  Actions
+                </th>
+              </tr>
+              <tr>
+                <th scope="col" class="px-2 py-3 text-right">Main</th>
+                <th scope="col" class="px-2 py-3 text-right">Generator</th>
+                <th scope="col" class="px-2 py-3 text-right">Util</th>
+                <th
+                  scope="col"
+                  class="px-2 py-3 text-right border-r custom-border"
+                >
+                  Water
+                </th>
+                <th scope="col" class="px-2 py-3 text-right">Main</th>
+                <th scope="col" class="px-2 py-3 text-right">Generator</th>
+                <th scope="col" class="px-2 py-3 text-right">Util</th>
+                <th
+                  scope="col"
+                  class="px-2 py-3 text-right border-r custom-border"
+                >
+                  Water
+                </th>
+              </tr>
+            </thead>
+            <tbody id="roomTableBody" class="divide-y custom-border">
+              <!-- Table rows will be dynamically inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- MOCK DATA ---
+      const mockData = {
+        buildings: [
+          { id: "B001", name: "101", type: "apt" },
+          { id: "B002", name: "102", type: "shoppingmall" },
+          { id: "B003", name: "205", type: "apt" },
+        ],
+        rooms: [
+          {
+            no: "101",
+            buildingNo: "B001",
+            size: "750 sqft",
+            type: "2-Bedroom",
+            owner: { type: "inno", name: "City Developments Limited" },
+            current_stay_id: "CHK001",
+          },
+          {
+            no: "102",
+            buildingNo: "B001",
+            size: "500 sqft",
+            type: "Studio",
+            owner: { type: "owner", name: "Mr. Lim" },
+            current_stay_id: "CHK002",
+          },
+          {
+            no: "125",
+            buildingNo: "B001",
+            size: "750 sqft",
+            type: "2-Bedroom",
+            owner: { type: "inno", name: "City Developments Limited" },
+            current_stay_id: null,
+          },
+          {
+            no: "215",
+            buildingNo: "B002",
+            size: "1200 sqft",
+            type: "Retail Shop",
+            owner: { type: "inno", name: "Golden Mile Mgmt" },
+            current_stay_id: "CHK003",
+          },
+          {
+            no: "301",
+            buildingNo: "B003",
+            size: "900 sqft",
+            type: "3-Bedroom",
+            owner: { type: "owner", name: "Ms. Tan" },
+            current_stay_id: "CHK004",
+          },
+          {
+            no: "302",
+            buildingNo: "B003",
+            size: "900 sqft",
+            type: "3-Bedroom",
+            owner: { type: "owner", name: "Ms. Tan" },
+            current_stay_id: null,
+          },
+          {
+            no: "505",
+            buildingNo: "B001",
+            size: "1100 sqft",
+            type: "Penthouse",
+            owner: { type: "inno", name: "City Developments Limited" },
+            current_stay_id: "CHK005",
+          },
+          {
+            no: "216",
+            buildingNo: "B002",
+            size: "800 sqft",
+            type: "F&B",
+            owner: { type: "inno", name: "Golden Mile Mgmt" },
+            current_stay_id: "CHK006",
+          },
+          {
+            no: "410",
+            buildingNo: "B003",
+            size: "600 sqft",
+            type: "1-Bedroom",
+            owner: { type: "owner", name: "Mr. Ang" },
+            current_stay_id: null,
+          },
+        ],
+        meters: [
+          { id: "MTR-B001-101", roomNo: "101", buildingNo: "B001" },
+          { id: "MTR-B001-102", roomNo: "102", buildingNo: "B001" },
+          { id: "MTR-B001-125", roomNo: "125", buildingNo: "B001" },
+          { id: "MTR-B002-215", roomNo: "215", buildingNo: "B002" },
+          { id: "MTR-B003-301", roomNo: "301", buildingNo: "B003" },
+          { id: "MTR-B003-302", roomNo: "302", buildingNo: "B003" },
+          { id: "MTR-B001-505", roomNo: "505", buildingNo: "B001" },
+          { id: "MTR-B002-216", roomNo: "216", buildingNo: "B002" },
+          { id: "MTR-B003-410", roomNo: "410", buildingNo: "B003" },
+        ],
+        checkins: [
+          {
+            id: "CHK001",
+            roomNo: "101",
+            buildingNo: "B001",
+            startMeter: {
+              main: 88021,
+              generator: 550,
+              util: 340,
+              water: 12050,
+            },
+          },
+          {
+            id: "CHK002",
+            roomNo: "102",
+            buildingNo: "B001",
+            startMeter: { main: 45000, generator: 210, util: 115, water: 8300 },
+          },
+          {
+            id: "CHK003",
+            roomNo: "215",
+            buildingNo: "B002",
+            startMeter: {
+              main: 150400,
+              generator: 8900,
+              util: 1050,
+              water: 150,
+            },
+          },
+          {
+            id: "CHK004",
+            roomNo: "301",
+            buildingNo: "B003",
+            startMeter: { main: 100, generator: 10, util: 5, water: 50 },
+          },
+          {
+            id: "CHK005",
+            roomNo: "505",
+            buildingNo: "B001",
+            startMeter: {
+              main: 250000,
+              generator: 1200,
+              util: 800,
+              water: 35000,
+            },
+          },
+          {
+            id: "CHK006",
+            roomNo: "216",
+            buildingNo: "B002",
+            startMeter: {
+              main: 75000,
+              generator: 4500,
+              util: 2100,
+              water: 9800,
+            },
+          },
+        ],
+        meterReadings: [
+          {
+            id: "MR001",
+            meterId: "MTR-B001-101",
+            readingDate: "2025-07-31",
+            main: 88940,
+            generator: 562,
+            util: 351,
+            water: 12355,
+          },
+          {
+            id: "MR002",
+            meterId: "MTR-B001-101",
+            readingDate: "2025-08-31",
+            main: 89810,
+            generator: 575,
+            util: 362,
+            water: 12680,
+          },
+          {
+            id: "MR003",
+            meterId: "MTR-B001-102",
+            readingDate: "2025-07-31",
+            main: 45980,
+            generator: 218,
+            util: 124,
+            water: 8540,
+          },
+          {
+            id: "MR004",
+            meterId: "MTR-B003-301",
+            readingDate: "2025-08-31",
+            main: 1250,
+            generator: 40,
+            util: 55,
+            water: 870,
+          },
+          {
+            id: "MR005",
+            meterId: "MTR-B001-505",
+            readingDate: "2025-08-31",
+            main: 254200,
+            generator: 1280,
+            util: 890,
+            water: 36500,
+          },
+          {
+            id: "MR006",
+            meterId: "MTR-B002-215",
+            readingDate: "2025-08-31",
+            main: 159800,
+            generator: 9400,
+            util: 1350,
+            water: 950,
+          },
+        ],
+      };
+
+      // --- DATA PROCESSING ---
+      const processedRooms = mockData.rooms.map((room) => {
+        const building = mockData.buildings.find(
+          (b) => b.id === room.buildingNo
+        );
+        const meter = mockData.meters.find(
+          (m) => m.roomNo === room.no && m.buildingNo === room.buildingNo
+        );
+        const checkin = mockData.checkins.find(
+          (c) => c.id === room.current_stay_id
+        );
+
+        const defaultMeter = {
+          main: "N/A",
+          generator: "N/A",
+          util: "N/A",
+          water: "N/A",
+        };
+
+        let readings = [];
+        if (meter) {
+          readings = mockData.meterReadings
+            .filter((r) => r.meterId === meter.id)
+            .sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate));
+        }
+
+        let currentMeter = { ...defaultMeter };
+        let prevMeter = { ...defaultMeter };
+
+        if (readings.length > 0) {
+          currentMeter = { ...defaultMeter, ...readings[0] };
+          if (readings.length > 1) {
+            prevMeter = { ...defaultMeter, ...readings[1] };
+          } else if (checkin) {
+            prevMeter = { ...defaultMeter, ...checkin.startMeter };
+          }
+        } else if (checkin) {
+          currentMeter = { ...defaultMeter, ...checkin.startMeter };
+        }
+
+        return {
+          buildingName: building ? building.name : "Unknown",
+          roomNo: room.no,
+          ownerName: room.owner.name,
+          roomType: room.type,
+          prevMeter,
+          currentMeter,
+        };
+      });
+
+      // --- DOM ELEMENTS ---
+      const tableBody = document.getElementById("roomTableBody");
+      const buildingFilter = document.getElementById("buildingFilter");
+      const roomTypeFilter = document.getElementById("roomTypeFilter");
+      const ownerFilter = document.getElementById("ownerFilter");
+      const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+
+      // --- FUNCTIONS ---
+
+      function renderTable(rooms) {
+        tableBody.innerHTML = "";
+
+        if (rooms.length === 0) {
+          tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="13" class="text-center py-10 px-6 text-gray-500">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p class="font-semibold">No rooms found</p>
+                            <p class="text-sm">Try adjusting your filters.</p>
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        rooms.forEach((room) => {
+          const format = (val) =>
+            typeof val === "number" ? val.toLocaleString() : val;
+          const row = `
+                    <tr class="table-row-hover transition-colors duration-200 text-sm">
+                        <td class="px-4 py-4 whitespace-nowrap font-medium text-gray-900">${
+                          room.buildingName
+                        }</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-gray-700">${
+                          room.roomNo
+                        }</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-gray-700 border-r custom-border">${
+                          room.ownerName
+                        }</td>
+                        
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-500 text-right">${format(
+                          room.prevMeter.main
+                        )}</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-500 text-right">${format(
+                          room.prevMeter.generator
+                        )}</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-500 text-right">${format(
+                          room.prevMeter.util
+                        )}</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-500 text-right border-r custom-border">${format(
+                          room.prevMeter.water
+                        )}</td>
+                        
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-800 font-semibold text-right">${format(
+                          room.currentMeter.main
+                        )}</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-800 font-semibold text-right">${format(
+                          room.currentMeter.generator
+                        )}</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-800 font-semibold text-right">${format(
+                          room.currentMeter.util
+                        )}</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-gray-800 font-semibold text-right border-r custom-border">${format(
+                          room.currentMeter.water
+                        )}</td>
+                        
+                        <td class="px-4 py-4 whitespace-nowrap text-center font-medium">
+                            <button class="text-gray-500 hover:text-blue-600 transition-colors duration-200 mr-3" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="text-gray-500 hover:text-blue-600 transition-colors duration-200" title="Edit Room">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+          tableBody.innerHTML += row;
+        });
+      }
+
+      function populateFilters() {
+        const buildingNames = [
+          ...new Set(processedRooms.map((r) => r.buildingName)),
+        ];
+        buildingNames.forEach((name) => {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          buildingFilter.appendChild(option);
+        });
+
+        const roomTypes = [...new Set(mockData.rooms.map((r) => r.type))];
+        roomTypes.forEach((type) => {
+          const option = document.createElement("option");
+          option.value = type;
+          option.textContent = type;
+          roomTypeFilter.appendChild(option);
+        });
+      }
+
+      function applyFilters() {
+        const building = buildingFilter.value;
+        const roomType = roomTypeFilter.value;
+        const owner = ownerFilter.value.toLowerCase();
+
+        const filteredData = processedRooms.filter((room) => {
+          const buildingMatch = !building || room.buildingName === building;
+          const roomTypeMatch = !roomType || room.roomType === roomType;
+          const ownerMatch =
+            !owner || room.ownerName.toLowerCase().includes(owner);
+          return buildingMatch && roomTypeMatch && ownerMatch;
+        });
+
+        renderTable(filteredData);
+      }
+
+      // --- EVENT LISTENERS ---
+      document.addEventListener("DOMContentLoaded", () => {
+        populateFilters();
+        renderTable(processedRooms);
+      });
+
+      buildingFilter.addEventListener("change", applyFilters);
+      roomTypeFilter.addEventListener("change", applyFilters);
+      ownerFilter.addEventListener("input", applyFilters);
+
+      clearFiltersBtn.addEventListener("click", () => {
+        buildingFilter.value = "";
+        roomTypeFilter.value = "";
+        ownerFilter.value = "";
+        applyFilters();
+      });
+    </script>
+  </body>
+</html>
