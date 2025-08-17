@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Single Room View</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Chart.js for usage visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f9fafb;
+        color: #111827;
+      }
+      .card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+      }
+    </style>
+  </head>
+  <body class="p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+      <!-- Header and Back Button -->
+      <header class="mb-8 flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Room Details</h1>
+          <p id="roomIdentifier" class="text-gray-600 mt-1">
+            Detailed view for a single room.
+          </p>
+        </div>
+        <a
+          href="#"
+          onclick="history.back(); return false;"
+          class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded-lg shadow-sm transition duration-300"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>Back to History
+        </a>
+      </header>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Details & Customer -->
+        <div class="lg:col-span-1 space-y-8">
+          <!-- Room Details Card -->
+          <div class="card p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-3">
+              Room Information
+            </h2>
+            <div id="roomDetails" class="space-y-3 text-sm">
+              <!-- Details will be populated here -->
+            </div>
+          </div>
+
+          <!-- Customer Details Card -->
+          <div class="card p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-3">
+              Current Occupant
+            </h2>
+            <div id="customerDetails" class="space-y-3 text-sm">
+              <!-- Customer info will be populated here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Chart & History -->
+        <div class="lg:col-span-2 space-y-8">
+          <!-- Usage Chart Card -->
+          <div class="card p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+              5-Month Utility Usage
+            </h2>
+            <div class="h-80">
+              <canvas id="usageChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Meter History Table Card -->
+          <div class="card overflow-hidden">
+            <h2 class="text-xl font-semibold text-gray-800 p-6">
+              Meter Reading History
+            </h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead
+                  id="historyTableHead"
+                  class="bg-gray-50 text-xs uppercase text-gray-500"
+                >
+                  <!-- Header will be generated -->
+                </thead>
+                <tbody
+                  id="historyTableBody"
+                  class="bg-white divide-y divide-gray-200"
+                >
+                  <!-- Body will be generated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- MOCK DATA FOR A SINGLE ROOM (e.g., Room 101 in Building 101) ---
+      const roomData = {
+        building: { id: "B001", name: "101" },
+        room: {
+          no: "101",
+          size: "750 sqft",
+          type: "2-Bedroom",
+          owner: { name: "City Developments Limited" },
+        },
+        customer: {
+          id: "CUST001",
+          name: "Kyaw Kyaw",
+          phone: "+95912345678",
+          nrc: "12/OUKAMA(N)123456",
+          checkinDate: "2025-06-01T09:00:00Z",
+        },
+        meterReadings: [
+          {
+            readingDate: "2025-08-15",
+            main: 89810,
+            generator: 575,
+            util: 362,
+            water: 12680,
+          },
+          {
+            readingDate: "2025-07-15",
+            main: 88940,
+            generator: 562,
+            util: 351,
+            water: 12355,
+          },
+          {
+            readingDate: "2025-06-15",
+            main: 88021,
+            generator: 550,
+            util: 340,
+            water: 12050,
+          },
+          {
+            readingDate: "2025-05-15",
+            main: 87100,
+            generator: 538,
+            util: 329,
+            water: 11745,
+          },
+          {
+            readingDate: "2025-04-15",
+            main: 86200,
+            generator: 525,
+            util: 318,
+            water: 11440,
+          },
+        ],
+      };
+
+      function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      // --- POPULATE UI ELEMENTS ---
+      document.addEventListener("DOMContentLoaded", () => {
+        // Set header
+        document.getElementById(
+          "roomIdentifier"
+        ).textContent = `Building ${roomData.building.name} - Room ${roomData.room.no}`;
+
+        // Populate Room Details
+        const roomDetailsContainer = document.getElementById("roomDetails");
+        roomDetailsContainer.innerHTML = `
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Building:</span> <span class="font-semibold">${roomData.building.name}</span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Room Number:</span> <span class="font-semibold">${roomData.room.no}</span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Type:</span> <span class="font-semibold">${roomData.room.type}</span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Size:</span> <span class="font-semibold">${roomData.room.size}</span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Owner:</span> <span class="font-semibold">${roomData.room.owner.name}</span></div>
+            `;
+
+        // Populate Customer Details
+        const customerDetailsContainer =
+          document.getElementById("customerDetails");
+        customerDetailsContainer.innerHTML = `
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Name:</span> <span class="font-semibold">${
+                  roomData.customer.name
+                }</span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Phone:</span> <span class="font-semibold">${
+                  roomData.customer.phone
+                }</span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-600">NRC:</span> <span class="font-semibold">${
+                  roomData.customer.nrc
+                }</span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-600">Check-in Date:</span> <span class="font-semibold">${formatDate(
+                  roomData.customer.checkinDate
+                )}</span></div>
+            `;
+
+        // --- RENDER METER HISTORY TABLE ---
+        const historyTableHead = document.getElementById("historyTableHead");
+        const historyTableBody = document.getElementById("historyTableBody");
+        historyTableHead.innerHTML = `
+                <tr>
+                    <th class="px-6 py-3 text-left">Date</th>
+                    <th class="px-6 py-3 text-right">Main</th>
+                    <th class="px-6 py-3 text-right">Generator</th>
+                    <th class="px-6 py-3 text-right">Util</th>
+                    <th class="px-6 py-3 text-right">Water</th>
+                </tr>
+            `;
+        let historyBodyHtml = "";
+        roomData.meterReadings.forEach((reading) => {
+          historyBodyHtml += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-800">${formatDate(
+                          reading.readingDate
+                        )}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-gray-700">${reading.main.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-gray-700">${reading.generator.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-gray-700">${reading.util.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-gray-700">${reading.water.toLocaleString()}</td>
+                    </tr>
+                `;
+        });
+        historyTableBody.innerHTML = historyBodyHtml;
+
+        // --- RENDER USAGE CHART ---
+        const chartData = roomData.meterReadings.slice().reverse(); // Use a reversed copy for chronological order
+        const labels = chartData.map((r) =>
+          new Date(r.readingDate).toLocaleDateString("en-US", {
+            month: "short",
+            year: "2-digit",
+          })
+        );
+
+        // Calculate monthly usage (difference from previous month)
+        const calculateUsage = (data, key) => {
+          let usage = [];
+          for (let i = 0; i < data.length; i++) {
+            if (i === 0) {
+              usage.push(0); // Cannot calculate usage for the first data point
+            } else {
+              usage.push(data[i][key] - data[i - 1][key]);
+            }
+          }
+          return usage;
+        };
+
+        const mainUsage = calculateUsage(chartData, "main");
+        const waterUsage = calculateUsage(chartData, "water");
+
+        const ctx = document.getElementById("usageChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Main Power Usage (kWh)",
+                data: mainUsage,
+                backgroundColor: "rgba(59, 130, 246, 0.5)",
+                borderColor: "rgba(59, 130, 246, 1)",
+                borderWidth: 1,
+                yAxisID: "y",
+              },
+              {
+                label: "Water Usage (Liters)",
+                data: waterUsage,
+                backgroundColor: "rgba(34, 197, 94, 0.5)",
+                borderColor: "rgba(34, 197, 94, 1)",
+                borderWidth: 1,
+                yAxisID: "y1",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                type: "linear",
+                display: true,
+                position: "left",
+                title: {
+                  display: true,
+                  text: "Power (kWh)",
+                },
+              },
+              y1: {
+                type: "linear",
+                display: true,
+                position: "right",
+                title: {
+                  display: true,
+                  text: "Water (Liters)",
+                },
+                grid: {
+                  drawOnChartArea: false, // only draw grid for the first Y axis
+                },
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let label = context.dataset.label || "";
+                    if (label) {
+                      label += ": ";
+                    }
+                    if (context.parsed.y !== null) {
+                      label += context.parsed.y.toLocaleString();
+                    }
+                    return label;
+                  },
+                },
+              },
+            },
+          },
+        });
+      });
+    </script>
+  </body>
+</html>
